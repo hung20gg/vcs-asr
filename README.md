@@ -1,5 +1,5 @@
 ```bash
-docker run -it \
+docker run -it --rm --name qwen-asr \
   -p 8000:8000 \
   -v $(pwd):/app \
   -v ~/.cache/huggingface:/root/.cache/huggingface \

@@ -1,8 +1,10 @@
+import json
 import os
 import tempfile
 import wave
 
-from fastapi import FastAPI, UploadFile, File, Query
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from pydub import AudioSegment
 import tempfile
 import webrtcvad
@@ -12,8 +14,8 @@ import wave
 
 from qwen_asr import Qwen3ASRModel
 
-MIN_SPEECH_MS = 200
-MAX_SILENCE_MS = 100
+MIN_SPEECH_MS = 300
+MAX_SILENCE_MS = 200
 ENERGY_THRESHOLD = 500
 
 app = FastAPI()
@@ -23,7 +25,7 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_available() else torch.bfloat16
 
 model = Qwen3ASRModel.from_pretrained(
-    "Qwen/Qwen3-ASR-1.7B",
+    "Qwen/Qwen3-ASR-0.6B",
     dtype=dtype,
     device_map=device,
     max_inference_batch_size=16,
@@ -221,6 +223,9 @@ async def transcribe(
     )
     print(f"Detected {len(segments)} speech segments with aggressiveness {aggressiveness}")
 
+    if not segments:
+        raise HTTPException(status_code=400, detail="No speech detected in audio")
+
     results = []
 
     for segment in segments:
@@ -243,6 +248,9 @@ async def transcribe(
         except Exception:
             text = ""
 
+        if not text.strip():
+            continue
+
         results.append(text)
         os.remove(chunk_path)
 
@@ -253,3 +261,59 @@ async def transcribe(
         "segments": results,
         "full_text": full_text
     }
+
+
+@app.post("/transcribe_stream")
+async def transcribe_stream(
+    file: UploadFile = File(...),
+    aggressiveness: int = Query(1, ge=0, le=3),
+    language: str = Query("Vietnamese")
+):
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(await file.read())
+        input_path = tmp.name
+
+    wav_path = preprocess_audio(input_path)
+
+    segments, sample_rate = split_audio_vad(
+        wav_path,
+        aggressiveness=aggressiveness
+    )
+    print(f"Detected {len(segments)} speech segments with aggressiveness {aggressiveness}")
+
+    if not segments:
+        raise HTTPException(status_code=400, detail="No speech detected in audio")
+
+    def generate():
+        for index, segment in enumerate(segments):
+            chunk_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+            audio_bytes = segment["audio"]
+
+            if not isinstance(audio_bytes, (bytes, bytearray)):
+                continue
+
+            with wave.open(chunk_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(sample_rate)
+                wf.writeframes(audio_bytes)
+
+            try:
+                res = model.transcribe(audio=chunk_path, language=language)
+                text = res[0].text
+            except Exception:
+                text = ""
+
+            if not text.strip():
+                continue
+
+            payload = {
+                "index": index,
+                "start": segment.get("start"),
+                "end": segment.get("end"),
+                "text": text,
+            }
+            yield json.dumps(payload, ensure_ascii=False) + "\n"
+            os.remove(chunk_path)
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
