@@ -1,0 +1,21 @@
+
+
+
+webrtcvad
+pydub
+
+# Audio processing
+soundfile
+librosa
+ffmpeg-python
+
+# HTTP + serving
+fastapi
+uvicorn[standard]
+requests
+fastmcp
+
+# Utils
+numpy
+scipy
+tqdm
