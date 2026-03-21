@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.4.0-cudnn-devel-ubuntu22.04
+FROM qwenllm/qwen3-asr
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,12 +12,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+RUN pip install vllm==0.6.0
+
+RUN pip install torch==2.8.0 torchaudio==2.8.0
+
+
 # Copy requirements first (better caching)
 COPY requirements.txt .
-
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-RUN pip install --no-cache-dir qwen-asr[vllm]
 
 # Upgrade pip + install deps
 RUN pip install --no-cache-dir -r requirements.txt

@@ -1,0 +1,17 @@
+model:
+  asr_model: "Qwen/Qwen3-ASR-0.6B"
+  speaker_model: "speechbrain/spkrec-ecapa-voxceleb"
+
+audio:
+  min_speech_ms: 300
+  max_silence_ms: 200
+  energy_threshold: 500
+  min_window_sec: 5
+  max_group_gap_sec: 0.5
+
+transcribe:
+  batch_size: 2
+
+speaker:
+  enroll_dir: "test/files/users"
+  min_score: 0.5
