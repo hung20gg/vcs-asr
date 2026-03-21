@@ -7,9 +7,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR" && pwd)"
 
 SERVER_URL="${SERVER_URL:-http://localhost:8000}"
-AUDIO_PATH="${AUDIO_PATH:-$WORKSPACE_DIR/files/test_audio.m4a}"
+AUDIO_PATH="${AUDIO_PATH:-$WORKSPACE_DIR/files/long_audio/meeting.m4a}"
 AGGRESSIVENESS="${AGGRESSIVENESS:-2}"
 LANGUAGE="${LANGUAGE:-Vietnamese}"
+
 
 if [[ ! -f "$AUDIO_PATH" ]]; then
 	echo "Audio file not found: $AUDIO_PATH" >&2

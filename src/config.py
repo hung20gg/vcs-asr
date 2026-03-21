@@ -12,6 +12,8 @@ with open(CONFIG_PATH, "r") as f:
 MODEL_PARAMS = config_data.get("model", {})
 ASR_MODEL = MODEL_PARAMS.get("asr_model", "QwenLM/Qwen3-ASR-0.6B")
 SPEAKER_MODEL = MODEL_PARAMS.get("speaker_model", "speechbrain/spkrec-ecapa-voxceleb")
+MODEL_SERVING = MODEL_PARAMS.get("serving", "transformers")
+BATCH_SIZE = MODEL_PARAMS.get("batch_size", 128)
 
 AUDIO_PARAMS = config_data.get("audio", {})
 MIN_SPEECH_MS = AUDIO_PARAMS.get("min_speech_ms", 300)

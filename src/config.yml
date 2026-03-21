@@ -1,9 +1,11 @@
 model:
-  asr_model: "Qwen/Qwen3-ASR-0.6B"
+  asr_model: "Qwen/Qwen3-ASR-1.7B"
   speaker_model: "speechbrain/spkrec-ecapa-voxceleb"
+  serving: "transformers"
+  batch_size: 128
 
 audio:
-  min_speech_ms: 300
+  min_speech_ms: 500
   max_silence_ms: 200
   energy_threshold: 500
   min_window_sec: 5
@@ -14,4 +16,4 @@ transcribe:
 
 speaker:
   enroll_dir: "test/files/users"
-  min_score: 0.5
+  min_score: 0.2

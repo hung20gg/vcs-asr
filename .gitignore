@@ -131,3 +131,6 @@ dmypy.json
 
 pretrained_models/
 pretrained_ecapa
+long_audio/
+
+log/

@@ -1,9 +1,12 @@
-FROM qwenllm/qwen3-asr
+FROM vllm/vllm-openai:v0.16.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # System deps
 RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
     ffmpeg \
     libsndfile1 \
     git \
@@ -12,18 +15,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-RUN pip install vllm==0.6.0
+RUN pip install -U qwen-asr[vllm]
 
-RUN pip install torch==2.8.0 torchaudio==2.8.0
+RUN python3 -m pip install -U --ignore-installed -c /tmp/constraints.txt qwen-asr
 
 
 # Copy requirements first (better caching)
 COPY requirements.txt .
 
 # Upgrade pip + install deps
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir --ignore-installed -c /tmp/constraints.txt -r requirements.txt
 
 # Copy app code
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python3", "-m", "src.start", "--host", "0.0.0.0", "--port", "8000"]

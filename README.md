@@ -3,7 +3,8 @@
 FastAPI-powered Voice Activity Detection and target-speaker Transcription service using Qwen3-ASR.
 
 ## Configuration
-Application logic settings (like speech duration triggers, gaps, and confidence thresholds) now live in `src/config.yml`. Verify or edit these parameters as necessary before booting up the server.
+Application logic settings (like speech duration triggers, gaps, and confidence thresholds) now live in `src/config.yml`.
+Set `model.serving` to `transformers` or `vllm` before booting up the server.
 
 ## Build the env
 
@@ -16,6 +17,24 @@ docker buildx build \
   --push .
 ```
 
+GPU (transformers)
+```bash
+docker buildx build \
+  --platform linux/amd64 \
+  -f Dockerfile.qwen-asr-gpu \
+  -t quanghung20gg/qwen-asr:gpu \
+  --push .
+```
+
+GPU (vLLM)
+```bash
+docker buildx build \
+  --platform linux/amd64 \
+  -f Dockerfile.qwen-asr-vllm \
+  -t quanghung20gg/qwen-asr:vllm-gpu \
+  --push .
+```
+
 ## Run the script
 
 ```bash
@@ -24,7 +43,35 @@ docker run -it --rm --name qwen-asr \
   -v $(pwd):/app \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
   quanghung20gg/qwen-asr:cpu \
-  python -m uvicorn src.server:app --host 0.0.0.0 --port 8000
+  python -m src.start --host 0.0.0.0 --port 8000
+```
+
+### GPU (transformers)
+
+Set `model.serving: "transformers"` in `src/config.yml`:
+
+```bash
+docker run -it --rm --name qwen-asr-gpu \
+  --gpus all \
+  -p 8000:8000 \
+  -v $(pwd):/app \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  quanghung20gg/qwen-asr:gpu \
+  python3 -m src.start --host 0.0.0.0 --port 8000
+```
+
+### vLLM backend
+
+Use the GPU image and set `model.serving: "vllm"` in `src/config.yml`:
+
+```bash
+docker run -it --rm --name qwen-asr-vllm \
+  --gpus all \
+  -p 8001:8001 \
+  -v $(pwd):/app \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  quanghung20gg/qwen-asr:vllm-gpu \
+  python -m src.start --host 0.0.0.0 --port 8001
 ```
 
 ## TODOs

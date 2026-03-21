@@ -17,18 +17,60 @@ from .config import (
     SPEAKER_MIN_SCORE,
     ASR_MODEL,
     SPEAKER_MODEL,
+    MODEL_SERVING,
+    BATCH_SIZE,
 )
 
 # ===== Load model once =====
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_available() else torch.bfloat16
 
-model = Qwen3ASRModel.from_pretrained(
-    ASR_MODEL,
-    dtype=dtype,
-    device_map=device,
-    max_inference_batch_size=16,
-)
+def _as_bool(value):
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+def _as_text(value, default):
+    if value is None:
+        return default
+    return str(value).strip() or default
+
+def _as_int(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+def _as_float(value, default):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+serving = _as_text(os.getenv("QWEN_ASR_SERVING"), MODEL_SERVING).lower()
+use_vllm = serving == "vllm" or _as_bool(os.getenv("QWEN_ASR_USE_VLLM"))
+
+if use_vllm:
+    vllm_model = os.getenv("QWEN_ASR_VLLM_MODEL", "Qwen/Qwen3-ASR-1.7B")
+    gpu_mem_util = _as_float(os.getenv("QWEN_ASR_VLLM_GPU_UTIL"), 0.7)
+    max_batch_size = _as_int(os.getenv("QWEN_ASR_VLLM_BATCH_SIZE"), 128)
+    max_new_tokens = _as_int(os.getenv("QWEN_ASR_VLLM_MAX_NEW_TOKENS"), 4096)
+
+    model = Qwen3ASRModel.LLM(
+        model=vllm_model,
+        gpu_memory_utilization=gpu_mem_util,
+        max_inference_batch_size=max_batch_size,
+        max_new_tokens=max_new_tokens,
+        forced_aligner_kwargs=dict(
+            dtype=torch.bfloat16,
+            device_map="cuda:0",
+        ),
+    )
+else:
+    model = Qwen3ASRModel.from_pretrained(
+        ASR_MODEL,
+        dtype=dtype,
+        device_map=device,
+        max_inference_batch_size=BATCH_SIZE,
+    )
 
 speaker_classifier = EncoderClassifier.from_hparams(
     source="speechbrain/spkrec-ecapa-voxceleb",
