@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import uvicorn
 
@@ -8,11 +9,20 @@ def parse_args():
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--gpus",
+        default="",
+        help="Comma-separated GPU ids to use, e.g. '0' or '0,1'.",
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+
+    if args.gpus:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
+        os.environ["QWEN_ASR_GPU_IDS"] = args.gpus
 
     from .server import app
 

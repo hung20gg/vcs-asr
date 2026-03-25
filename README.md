@@ -57,7 +57,7 @@ docker run -it --rm --name qwen-asr-gpu \
   -v $(pwd):/app \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
   quanghung20gg/qwen-asr:gpu \
-  python3 -m src.start --host 0.0.0.0 --port 8000
+  python3 -m src.start --host 0.0.0.0 --port 8000 --gpus 0,1
 ```
 
 ### vLLM backend
@@ -71,7 +71,23 @@ docker run -it --rm --name qwen-asr-vllm \
   -v $(pwd):/app \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
   quanghung20gg/qwen-asr:vllm-gpu \
-  python -m src.start --host 0.0.0.0 --port 8001
+  python -m src.start --host 0.0.0.0 --port 8001 --gpus 0,1
+
+You can limit GPU visibility with `--gpus`. Examples: `--gpus 0` (single GPU) or `--gpus 0,1` (multi-GPU).
+```
+
+## Development mode:
+
+Install dependencies and run the server with hot-reloading for development:
+
+```bash
+./install.sh
+```
+
+Start the server in development mode:
+
+```bash
+uvicorn src.start:app --host 0.0.0.0 --port 8000
 ```
 
 ## TODOs

@@ -22,8 +22,11 @@ from .config import (
 )
 
 # ===== Load model once =====
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-dtype = torch.bfloat16 if torch.cuda.is_available() else torch.bfloat16
+_cuda_available = torch.cuda.is_available()
+_cuda_device_count = torch.cuda.device_count() if _cuda_available else 0
+
+device = "cuda:0" if _cuda_available else "cpu"
+dtype = torch.bfloat16 if _cuda_available else torch.bfloat16
 
 def _as_bool(value):
     return str(value).strip().lower() in {"1", "true", "yes", "y"}
@@ -54,6 +57,12 @@ if use_vllm:
     max_batch_size = _as_int(os.getenv("QWEN_ASR_VLLM_BATCH_SIZE"), 128)
     max_new_tokens = _as_int(os.getenv("QWEN_ASR_VLLM_MAX_NEW_TOKENS"), 4096)
 
+    aligner_device_map = "auto" if _cuda_device_count > 1 else device
+
+    llm_kwargs = {}
+    if _cuda_device_count > 1:
+        llm_kwargs["tensor_parallel_size"] = _cuda_device_count
+
     model = Qwen3ASRModel.LLM(
         model=vllm_model,
         gpu_memory_utilization=gpu_mem_util,
@@ -61,14 +70,16 @@ if use_vllm:
         max_new_tokens=max_new_tokens,
         forced_aligner_kwargs=dict(
             dtype=torch.bfloat16,
-            device_map="cuda:0",
+            device_map=aligner_device_map,
         ),
+        **llm_kwargs,
     )
 else:
+    device_map = "auto" if _cuda_device_count > 1 else device
     model = Qwen3ASRModel.from_pretrained(
         ASR_MODEL,
         dtype=dtype,
-        device_map=device,
+        device_map=device_map,
         max_inference_batch_size=BATCH_SIZE,
     )
 
