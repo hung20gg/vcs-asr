@@ -7,6 +7,9 @@ set -euo pipefail
 #   ./install.sh [cpu|gpu|vllm]
 # Default mode is cpu when no argument is provided.
 
+conda --version && conda create -y -n vcs-asr python=3.11 
+conda activate vcs-asr
+
 MODE="cpu"
 
 if [[ $# -gt 1 ]]; then
