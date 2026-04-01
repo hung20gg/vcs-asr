@@ -94,7 +94,7 @@ def to_markdown(sessions):
 
 
 if __name__ == "__main__":
-    file_path = "transcribe_stream.log"
+    file_path = "test/log/transcribe_stream_2.jsonl"
 
     logs = load_logs(file_path)
     sessions = split_sessions(logs, SESSION_SPLIT)
